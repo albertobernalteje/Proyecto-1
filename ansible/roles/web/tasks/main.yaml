@@ -1,0 +1,50 @@
+- name: Instalar Apache con PHP
+  ansible.builtin.apt:
+    name:
+      - apache2
+      - libapache2-mod-php
+      - php-mysql
+      - php-mbstring
+    state: present
+
+- name: Activar mod_rewrite (lo usa el .htaccess de la aplicación)
+  community.general.apache2_module:
+    name: rewrite
+    state: present
+  notify: Reiniciar apache2
+
+# update: false para no tocar el repositorio en ejecuciones posteriores
+# (config.php se sobrescribe con la plantilla)
+- name: Desplegar la aplicación
+  ansible.builtin.git:
+    repo: "{{ app_repo }}"
+    dest: "{{ vhost_docroot }}"
+    version: "{{ app_version }}"
+    update: false
+
+- name: Generar config.php con los datos de conexión
+  ansible.builtin.template:
+    src: config.php.j2
+    dest: "{{ vhost_docroot }}/config.php"
+    owner: root
+    group: www-data
+    mode: "0640"
+
+- name: Crear el virtual host
+  ansible.builtin.template:
+    src: guestbook.conf.j2
+    dest: /etc/apache2/sites-available/guestbook.conf
+    mode: "0644"
+  notify: Recargar apache2
+
+- name: Habilitar el virtual host
+  ansible.builtin.command: a2ensite guestbook.conf
+  args:
+    creates: /etc/apache2/sites-enabled/guestbook.conf
+  notify: Recargar apache2
+
+- name: Deshabilitar el sitio por defecto
+  ansible.builtin.command: a2dissite 000-default.conf
+  args:
+    removes: /etc/apache2/sites-enabled/000-default.conf
+  notify: Recargar apache2
