@@ -1,0 +1,6 @@
+# Fichero de configuración de MariaDB en Ubuntu
+mariadb_conf: /etc/mysql/mariadb.conf.d/50-server.cnf
+
+# schema.sql del repositorio de la aplicación
+schema_url: https://raw.githubusercontent.com/josedom24/guestbook_php/a5b6c516e2aab8449e1e838284b2eff97813251d/schema.sql
+schema_dest: /var/lib/mysql-schema/schema.sql

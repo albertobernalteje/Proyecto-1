@@ -1,0 +1,64 @@
+- name: Instalar MariaDB y la librería de Python para gestionarla
+  ansible.builtin.apt:
+    name:
+      - mariadb-server
+      - python3-pymysql
+    state: present
+
+- name: MariaDB escucha solo en la red de datos
+  ansible.builtin.lineinfile:
+    path: "{{ mariadb_conf }}"
+    regexp: '^bind-address'
+    line: "bind-address            = {{ ip_datos_bd }}"
+  notify: Reiniciar mariadb
+
+# El reinicio tiene que hacerse ya, antes de crear la base de datos
+- name: Aplicar cambios de configuración
+  ansible.builtin.meta: flush_handlers
+
+- name: Crear la base de datos
+  community.mysql.mysql_db:
+    name: "{{ bd_nombre }}"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Crear el usuario, que solo puede conectarse desde el servidor web
+  community.mysql.mysql_user:
+    name: "{{ bd_usuario }}"
+    host: "{{ ip_datos_web }}"
+    password: "{{ bd_password }}"
+    priv: "{{ bd_nombre }}.*:ALL"
+    column_case_sensitive: true
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Crear el directorio para el esquema
+  ansible.builtin.file:
+    path: "{{ schema_dest | dirname }}"
+    state: directory
+    mode: "0750"
+
+- name: Descargar schema.sql de la aplicación
+  ansible.builtin.get_url:
+    url: "{{ schema_url }}"
+    dest: "{{ schema_dest }}"
+    mode: "0640"
+
+# schema.sql no usa IF NOT EXISTS: solo se importa si la tabla no existe
+- name: Comprobar si existe la tabla messages
+  community.mysql.mysql_query:
+    login_db: information_schema
+    query: >
+      SELECT COUNT(*) AS n FROM tables
+      WHERE table_schema = '{{ bd_nombre }}' AND table_name = 'messages'
+    login_unix_socket: /run/mysqld/mysqld.sock
+  register: tabla
+  changed_when: false
+
+- name: Crear las tablas de la aplicación
+  community.mysql.mysql_db:
+    name: "{{ bd_nombre }}"
+    state: import
+    target: "{{ schema_dest }}"
+    login_unix_socket: /run/mysqld/mysqld.sock
+  when: tabla.query_result[0][0].n == 0

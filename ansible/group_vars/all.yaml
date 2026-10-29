@@ -1,0 +1,8 @@
+# Direcciones de la red de datos (estáticas, ver opentofu/cloud-init)
+ip_datos_web: 10.10.10.10
+ip_datos_bd: 10.10.10.20
+
+# Base de datos de la aplicación
+bd_nombre: guestbook
+bd_usuario: guestbook
+bd_password: guestbook2026

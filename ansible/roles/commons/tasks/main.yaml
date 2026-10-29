@@ -1,0 +1,17 @@
+- name: Actualizar índices de paquetes
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Actualizar el sistema
+  ansible.builtin.apt:
+    upgrade: dist
+
+- name: Instalar paquetes comunes
+  ansible.builtin.apt:
+    name:
+      - vim
+      - curl
+      - git
+      - mariadb-client
+    state: present
