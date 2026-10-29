@@ -1,128 +1,99 @@
-terraform {
-  required_providers {
-    libvirt = {
-      source  = "dmacvicar/libvirt"
-      version = "~> 0.7.0"
-    }
-  }
+##############################################
+# web — Debian 13
+##############################################
+
+# Clon ligero sobre la imagen base: solo almacena los cambios
+resource "libvirt_volume" "p1-web-disk" {
+  name             = "p1-web.qcow2"
+  pool             = var.libvirt_pool_name
+  base_volume_name = var.base_image_debian
+  base_volume_pool = var.libvirt_pool_name
+  format           = "qcow2"
 }
 
-provider "libvirt" {
-  uri = "qemu:///system"
+resource "libvirt_cloudinit_disk" "p1-web-cloudinit" {
+  name = "p1-web-cloudinit.iso"
+  pool = var.libvirt_pool_name
+  user_data = templatefile("${path.module}/cloud-init/user-data.yaml", {
+    hostname = "web"
+    usuario  = "debian"
+    clave    = trimspace(file(pathexpand(var.ssh_public_key)))
+  })
+  network_config = file("${path.module}/cloud-init/network-config-web.yaml")
 }
 
-# ----------------------------------------------------------------------
-# REDES
-# ----------------------------------------------------------------------
-
-# 1. Red NAT con DHCP
-resource "libvirt_network" "red_nat" {
-  name      = "red_nat_proyecto"
-  mode      = "nat"
-  domain    = "proyecto.local"
-  addresses = ["192.168.122.0/24"]
-  dhcp {
-    enabled = true
-  }
-}
-
-# 2. Red de datos aislada
-resource "libvirt_network" "red_datos" {
-  name      = "red_datos_proyecto"
-  mode      = "none"
-  addresses = ["10.0.0.0/24"]
-  dhcp {
-    enabled = false
-  }
-}
-
-# ----------------------------------------------------------------------
-# DISCOS
-# ----------------------------------------------------------------------
-resource "libvirt_volume" "disco_base" {
-  name   = "debian13-base.qcow2"
-  source = var.base_image_path
-}
-
-resource "libvirt_volume" "disco_web" {
-  name           = "disco_web.qcow2"
-  base_volume_id = libvirt_volume.disco_base.id
-  capacity       = 10737418240
-}
-
-resource "libvirt_volume" "disco_bd" {
-  name           = "disco_bd.qcow2"
-  base_volume_id = libvirt_volume.disco_base.id
-  capacity       = 10737418240
-}
-
-# ----------------------------------------------------------------------
-# MÁQUINAS VIRTUALES
-# ----------------------------------------------------------------------
-
-# Servidor WEB
-resource "libvirt_domain" "web" {
-  name   = "web"
+resource "libvirt_domain" "p1-web" {
+  name   = "p1-web"
   memory = var.memory_web
   vcpu   = 2
 
-  disk {
-    volume_id = libvirt_volume.disco_web.id
-  }
-
-  # Interfaz 1: Red NAT
+  # Red 1: NAT con DHCP (acceso desde el anfitrión)
   network_interface {
-    network_id     = libvirt_network.red_nat.id
+    network_id     = libvirt_network.p1-red-nat.id
     wait_for_lease = true
   }
 
-  # Interfaz 2: Red de datos aislada
+  # Red 2: datos (IP estática 10.10.10.10)
   network_interface {
-    network_id = libvirt_network.red_datos.id
-    addresses  = ["10.0.0.10"]
+    network_id = libvirt_network.p1-red-datos.id
   }
 
-  graphics {
-    type        = "spice"
-    listen_type = "address"
+  disk { volume_id = libvirt_volume.p1-web-disk.id }
+  cloudinit = libvirt_cloudinit_disk.p1-web-cloudinit.id
+
+  console {
+    type        = "pty"
+    target_port = "0"
+    target_type = "serial"
   }
 }
 
-# Servidor BD
-resource "libvirt_domain" "bd" {
-  name   = "bd"
+##############################################
+# bd — Ubuntu 26.04
+##############################################
+
+resource "libvirt_volume" "p1-bd-disk" {
+  name             = "p1-bd.qcow2"
+  pool             = var.libvirt_pool_name
+  base_volume_name = var.base_image_ubuntu
+  base_volume_pool = var.libvirt_pool_name
+  format           = "qcow2"
+}
+
+resource "libvirt_cloudinit_disk" "p1-bd-cloudinit" {
+  name = "p1-bd-cloudinit.iso"
+  pool = var.libvirt_pool_name
+  user_data = templatefile("${path.module}/cloud-init/user-data.yaml", {
+    hostname = "bd"
+    usuario  = "ubuntu"
+    clave    = trimspace(file(pathexpand(var.ssh_public_key)))
+  })
+  network_config = file("${path.module}/cloud-init/network-config-bd.yaml")
+}
+
+resource "libvirt_domain" "p1-bd" {
+  name   = "p1-bd"
   memory = var.memory_bd
   vcpu   = 2
 
-  disk {
-    volume_id = libvirt_volume.disco_bd.id
-  }
-
-  # Interfaz 1: Red NAT
+  # Red 1: NAT con DHCP (salida a internet para instalar paquetes)
   network_interface {
-    network_id     = libvirt_network.red_nat.id
+    network_id     = libvirt_network.p1-red-nat.id
     wait_for_lease = true
   }
 
-  # Interfaz 2: Red de datos aislada
+  # Red 2: datos (IP estática 10.10.10.20)
   network_interface {
-    network_id = libvirt_network.red_datos.id
-    addresses  = ["10.0.0.20"]
+    network_id = libvirt_network.p1-red-datos.id
   }
 
-  graphics {
-    type        = "spice"
-    listen_type = "address"
-  }
-}
+  disk { volume_id = libvirt_volume.p1-bd-disk.id }
+  cloudinit = libvirt_cloudinit_disk.p1-bd-cloudinit.id
 
-# ----------------------------------------------------------------------
-# GENERACIÓN AUTOMÁTICA DEL INVENTARIO DE ANSIBLE
-# ----------------------------------------------------------------------
-resource "local_file" "ansible_inventory" {
-  content = templatefile("${path.module}/inventory.tpl", {
-    ip_web = libvirt_domain.web.network_interface[0].addresses[0]
-    ip_bd  = libvirt_domain.bd.network_interface[0].addresses[0]
-  })
-  filename = "${path.module}/../ansible/hosts"
+  # Ubuntu no termina de arrancar sin consola serie
+  console {
+    type        = "pty"
+    target_port = "0"
+    target_type = "serial"
+  }
 }

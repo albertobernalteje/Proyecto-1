@@ -1,0 +1,14 @@
+# Generado por OpenTofu
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Inventario generado por OpenTofu
+ansible/hosts
+
+# Imágenes de disco y bases de datos
+*.qcow2
+*.img
+*.iso
+*.sql.gz
