@@ -1,0 +1,9 @@
+# Gestionado por Ansible (rol router)
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+# bd sale a internet con la IP de web en la red NAT
+-A POSTROUTING -s {{ red_datos }} -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+COMMIT

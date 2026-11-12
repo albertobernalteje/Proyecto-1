@@ -5,3 +5,6 @@ vhost_docroot: /var/www/guestbook
 # Repositorio de la aplicación (fijado a un commit para que sea reproducible)
 app_repo: https://github.com/josedom24/guestbook_php.git
 app_version: a5b6c516e2aab8449e1e838284b2eff97813251d
+
+# Router/NAT: red que sale a internet a través de web
+red_datos: 10.10.10.0/24

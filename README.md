@@ -9,18 +9,24 @@ la aplicación [guestbook_php](https://github.com/josedom24/guestbook_php)
 | Máquina | Sistema      | Red NAT (`p1-red-nat`)  | Red de datos (`p1-red-datos`) |
 |---------|--------------|-------------------------|-------------------------------|
 | `web`   | Debian 13    | DHCP (192.168.140.0/24) | 10.10.10.10                   |
-| `bd`    | Ubuntu 26.04 | DHCP (192.168.140.0/24) | 10.10.10.20                   |
+| `bd`    | Ubuntu 26.04 | —                       | 10.10.10.20 (gw 10.10.10.10)  |
 
-- `p1-red-nat`: red NAT con DHCP. Desde el anfitrión se accede al servidor web
-  y las máquinas tienen salida a internet.
+- `p1-red-nat`: red NAT con DHCP. Desde el anfitrión se accede al servidor web,
+  que tiene salida a internet.
 - `p1-red-datos`: red muy aislada (sin IP en el anfitrión) con direcciones
   estáticas, por la que `web` se conecta a MariaDB.
+- `web` hace de router/NAT: `bd` solo está en la red de datos y sale a internet
+  a través de él (reenvío de paquetes y masquerade con iptables). Ansible llega
+  a `bd` saltando por `web` (SSH con `ProxyCommand`).
 
 ## Estructura
 
 - `opentofu/`: definición del escenario (redes, máquinas, cloud-init) y
   generación del inventario de Ansible (`ansible/hosts`).
-- `ansible/`: configuración con tres roles:
+- `ansible/`: configuración con cuatro roles:
+  - `router`: en `web`, activa el reenvío de paquetes y el NAT de la red de
+    datos con iptables (reglas guardadas con iptables-persistent). Se ejecuta
+    primero porque `bd` lo necesita para salir a internet.
   - `commons`: actualiza el sistema e instala paquetes comunes.
   - `bd`: MariaDB escuchando solo en la red de datos, base de datos, usuario
     que solo puede conectarse desde `web` y tablas de la aplicación.
@@ -29,8 +35,8 @@ la aplicación [guestbook_php](https://github.com/josedom24/guestbook_php)
 
 ## Requisitos
 
-- libvirt, OpenTofu y Ansible (con las colecciones `community.mysql` y
-  `community.general`).
+- libvirt, OpenTofu y Ansible (con las colecciones `community.mysql`,
+  `community.general` y `ansible.posix`).
 - Imágenes base `debian13-base.qcow2` y `ubuntu2604-base.qcow2` en el pool
   `default` (se pueden cambiar con las variables `base_image_debian` y
   `base_image_ubuntu`).

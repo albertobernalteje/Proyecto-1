@@ -1,6 +1,22 @@
+# Primero web hace de router: bd necesita salir a internet a través de él
+- name: Router/NAT
+  hosts: servidores_web
+  become: true
+  roles:
+    - router
+
+# bd puede tardar en arrancar: se espera a que acepte SSH antes de recoger facts
 - name: Configuración común
   hosts: all
   become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Esperar a que las máquinas acepten conexiones
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+
+    - name: Recoger facts
+      ansible.builtin.setup:
   roles:
     - commons
 

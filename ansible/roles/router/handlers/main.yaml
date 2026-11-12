@@ -1,0 +1,4 @@
+- name: Cargar las reglas de iptables
+  ansible.builtin.service:
+    name: netfilter-persistent
+    state: restarted
