@@ -76,13 +76,7 @@ resource "libvirt_domain" "p1-bd" {
   memory = var.memory_bd
   vcpu   = 2
 
-  # Red 1: NAT con DHCP (salida a internet para instalar paquetes)
-  network_interface {
-    network_id     = libvirt_network.p1-red-nat.id
-    wait_for_lease = true
-  }
-
-  # Red 2: datos (IP estática 10.10.10.20)
+  # Solo red de datos (IP estática 10.10.10.20): sale a internet a través de web
   network_interface {
     network_id = libvirt_network.p1-red-datos.id
   }
