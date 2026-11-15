@@ -15,3 +15,12 @@ output "bd" {
     gateway  = "10.10.10.10"
   }
 }
+
+# backup solo está en la red de datos, como bd
+output "backup" {
+  value = {
+    nombre   = libvirt_domain.p1-backup.name
+    ip_datos = "10.10.10.30"
+    gateway  = "10.10.10.10"
+  }
+}

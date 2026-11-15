@@ -91,3 +91,46 @@ resource "libvirt_domain" "p1-bd" {
     target_type = "serial"
   }
 }
+
+##############################################
+# backup — Debian 13 (copias de seguridad de la base de datos)
+##############################################
+
+resource "libvirt_volume" "p1-backup-disk" {
+  name             = "p1-backup.qcow2"
+  pool             = var.libvirt_pool_name
+  base_volume_name = var.base_image_debian
+  base_volume_pool = var.libvirt_pool_name
+  format           = "qcow2"
+}
+
+resource "libvirt_cloudinit_disk" "p1-backup-cloudinit" {
+  name = "p1-backup-cloudinit.iso"
+  pool = var.libvirt_pool_name
+  user_data = templatefile("${path.module}/cloud-init/user-data.yaml", {
+    hostname = "backup"
+    usuario  = "debian"
+    clave    = trimspace(file(pathexpand(var.ssh_public_key)))
+  })
+  network_config = file("${path.module}/cloud-init/network-config-backup.yaml")
+}
+
+resource "libvirt_domain" "p1-backup" {
+  name   = "p1-backup"
+  memory = var.memory_backup
+  vcpu   = 1
+
+  # Solo red de datos (IP estática 10.10.10.30): sale a internet a través de web
+  network_interface {
+    network_id = libvirt_network.p1-red-datos.id
+  }
+
+  disk { volume_id = libvirt_volume.p1-backup-disk.id }
+  cloudinit = libvirt_cloudinit_disk.p1-backup-cloudinit.id
+
+  console {
+    type        = "pty"
+    target_port = "0"
+    target_type = "serial"
+  }
+}

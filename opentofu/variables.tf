@@ -30,6 +30,12 @@ variable "memory_bd" {
   default     = 1024
 }
 
+variable "memory_backup" {
+  type        = number
+  description = "Memoria RAM (MB) del servidor de copias de seguridad."
+  default     = 512
+}
+
 # Clave pública que cloud-init mete en las máquinas para que entre Ansible
 variable "ssh_public_key" {
   type        = string

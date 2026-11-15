@@ -7,5 +7,7 @@ resource "local_file" "inventario" {
     ip_web = libvirt_domain.p1-web.network_interface[0].addresses[0]
     # ...y en bd por la red de datos, saltando por web
     ip_bd = "10.10.10.20"
+    # backup también por la red de datos
+    ip_backup = "10.10.10.30"
   })
 }

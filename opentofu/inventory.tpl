@@ -6,3 +6,7 @@ web ansible_host=${ip_web} ansible_user=debian
 # (ProxyCommand con ssh -W equivale a ProxyJump, pero admite opciones para el salto)
 [servidores_bd]
 bd ansible_host=${ip_bd} ansible_user=ubuntu ansible_ssh_common_args='-o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null debian@${ip_web}"'
+
+# backup también está solo en la red de datos: mismo salto por web
+[servidores_backup]
+backup ansible_host=${ip_backup} ansible_user=debian ansible_ssh_common_args='-o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null debian@${ip_web}"'
