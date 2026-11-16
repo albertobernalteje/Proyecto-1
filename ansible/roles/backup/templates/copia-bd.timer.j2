@@ -1,0 +1,11 @@
+# Generado por Ansible
+[Unit]
+Description=Copia diaria de la base de datos {{ bd_nombre }}
+
+[Timer]
+OnCalendar={{ backup_calendario }}
+# Si la máquina estaba apagada a esa hora, la copia se hace al arrancar
+Persistent=true
+
+[Install]
+WantedBy=timers.target

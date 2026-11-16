@@ -1,0 +1,9 @@
+#!/bin/bash
+# Generado por Ansible: restaura la base de datos {{ bd_nombre }} desde una copia
+# Uso: restaurar-bd [fichero]   (sin argumento, la copia más reciente)
+set -euo pipefail
+
+copia="${1:-$(ls -1t {{ backup_dir }}/{{ bd_nombre }}-*.sql.gz | head -n 1)}"
+echo "Restaurando $copia"
+gunzip -c "$copia" | mariadb --defaults-extra-file={{ backup_cnf }} {{ bd_nombre }}
+echo "Restauración terminada"

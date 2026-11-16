@@ -1,0 +1,9 @@
+# Dónde se guardan las copias y cuántas se conservan
+backup_dir: /var/backups/guestbook
+backup_copias: 7
+
+# Cuándo se hace la copia (formato OnCalendar de systemd): todos los días a las 03:00
+backup_calendario: "*-*-* 03:00:00"
+
+# Datos de conexión a MariaDB (solo los puede leer root)
+backup_cnf: /etc/mysql/backup-bd.cnf

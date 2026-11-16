@@ -1,0 +1,9 @@
+# Generado por Ansible
+[Unit]
+Description=Copia de seguridad de la base de datos {{ bd_nombre }}
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/copia-bd

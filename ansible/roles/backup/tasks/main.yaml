@@ -1,0 +1,53 @@
+- name: Crear el directorio de las copias
+  ansible.builtin.file:
+    path: "{{ backup_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Crear el directorio de configuración del cliente de MariaDB
+  ansible.builtin.file:
+    path: "{{ backup_cnf | dirname }}"
+    state: directory
+    mode: "0755"
+
+# La contraseña no va en la línea de órdenes (se vería con ps)
+- name: Guardar los datos de conexión a MariaDB
+  ansible.builtin.template:
+    src: backup-bd.cnf.j2
+    dest: "{{ backup_cnf }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Instalar los scripts de copia y restauración
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: /usr/local/sbin/{{ item }}
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - copia-bd
+    - restaurar-bd
+
+- name: Crear el servicio y el timer de systemd
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: /etc/systemd/system/{{ item }}
+    mode: "0644"
+  loop:
+    - copia-bd.service
+    - copia-bd.timer
+  notify: Recargar systemd
+
+# systemd tiene que conocer las unidades nuevas antes de activar el timer
+- name: Aplicar cambios de systemd
+  ansible.builtin.meta: flush_handlers
+
+- name: Activar el timer de las copias
+  ansible.builtin.systemd_service:
+    name: copia-bd.timer
+    state: started
+    enabled: true

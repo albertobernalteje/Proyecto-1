@@ -1,0 +1,17 @@
+#!/bin/bash
+# Generado por Ansible: copia de la base de datos {{ bd_nombre }} con rotación
+set -euo pipefail
+# Las copias solo las puede leer root
+umask 077
+
+dir={{ backup_dir }}
+copia="$dir/{{ bd_nombre }}-$(date +%Y%m%d-%H%M%S).sql.gz"
+
+# Se escribe en un temporal y se renombra al terminar: nunca queda una copia a medias
+mariadb-dump --defaults-extra-file={{ backup_cnf }} --single-transaction {{ bd_nombre }} \
+  | gzip > "$copia.tmp"
+mv "$copia.tmp" "$copia"
+echo "Copia creada: $copia"
+
+# Rotación: se conservan las {{ backup_copias }} más recientes
+ls -1t "$dir"/{{ bd_nombre }}-*.sql.gz | tail -n +{{ backup_copias + 1 }} | xargs -r rm -v --

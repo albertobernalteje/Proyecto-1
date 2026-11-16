@@ -32,6 +32,18 @@
     state: present
     login_unix_socket: /run/mysqld/mysqld.sock
 
+# Puede hacer la copia (SELECT, LOCK TABLES...) y restaurarla (DROP, CREATE, INSERT...),
+# pero solo de la base de datos de la aplicación y solo desde backup
+- name: Crear el usuario de las copias, que solo puede conectarse desde backup
+  community.mysql.mysql_user:
+    name: "{{ bd_backup_usuario }}"
+    host: "{{ ip_datos_backup }}"
+    password: "{{ bd_backup_password }}"
+    priv: "{{ bd_nombre }}.*:SELECT,LOCK TABLES,SHOW VIEW,TRIGGER,CREATE,DROP,ALTER,INDEX,INSERT"
+    column_case_sensitive: true
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
 - name: Crear el directorio para el esquema
   ansible.builtin.file:
     path: "{{ schema_dest | dirname }}"

@@ -2,6 +2,14 @@
 - name: Router/NAT
   hosts: servidores_web
   become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Esperar a que web acepte conexiones
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+
+    - name: Recoger facts
+      ansible.builtin.setup:
   roles:
     - router
 
@@ -31,3 +39,10 @@
   become: true
   roles:
     - web
+
+# backup hace las copias de la base de datos por la red de datos
+- name: Copias de seguridad
+  hosts: servidores_backup
+  become: true
+  roles:
+    - backup

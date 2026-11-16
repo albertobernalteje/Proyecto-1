@@ -1,8 +1,13 @@
 # Direcciones de la red de datos (estáticas, ver opentofu/cloud-init)
 ip_datos_web: 10.10.10.10
 ip_datos_bd: 10.10.10.20
+ip_datos_backup: 10.10.10.30
 
 # Base de datos de la aplicación
 bd_nombre: guestbook
 bd_usuario: guestbook
 bd_password: guestbook2026
+
+# Usuario de MariaDB para las copias de seguridad (solo desde backup)
+bd_backup_usuario: backup
+bd_backup_password: backup2026
