@@ -5,9 +5,9 @@ resource "local_file" "inventario" {
   content = templatefile("${path.module}/inventory.tpl", {
     # Ansible entra en web por la red NAT (IP por DHCP)...
     ip_web = libvirt_domain.p1-web.network_interface[0].addresses[0]
-    # ...y en bd por la red de datos, saltando por web
-    ip_bd = "10.10.10.20"
-    # backup también por la red de datos
+    # ...y en web2, bd y backup por la red de datos, saltando por web
+    ip_web2   = "10.10.10.11"
+    ip_bd     = "10.10.10.20"
     ip_backup = "10.10.10.30"
   })
 }

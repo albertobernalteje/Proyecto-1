@@ -9,7 +9,7 @@ resource "libvirt_network" "p1-red-nat" {
   autostart = true
 }
 
-# Red de datos muy aislada (sin IP en el anfitrión): solo web y bd,
+# Red de datos muy aislada (sin IP en el anfitrión): web, web2, bd y backup,
 # con direcciones estáticas en 10.10.10.0/24 (cloud-init/network-config-*.yaml)
 resource "libvirt_network" "p1-red-datos" {
   name      = "p1-red-datos"

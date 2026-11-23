@@ -24,6 +24,12 @@ variable "memory_web" {
   default     = 1024
 }
 
+variable "memory_web2" {
+  type        = number
+  description = "Memoria RAM (MB) del segundo servidor web."
+  default     = 512
+}
+
 variable "memory_bd" {
   type        = number
   description = "Memoria RAM (MB) del servidor de base de datos."

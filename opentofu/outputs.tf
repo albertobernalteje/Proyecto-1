@@ -7,6 +7,15 @@ output "web" {
   }
 }
 
+# web2 solo está en la red de datos: le llegan las peticiones desde el balanceador de web
+output "web2" {
+  value = {
+    nombre   = libvirt_domain.p1-web2.name
+    ip_datos = "10.10.10.11"
+    gateway  = "10.10.10.10"
+  }
+}
+
 # bd ya no está en la red NAT: sale a internet a través de web
 output "bd" {
   value = {
