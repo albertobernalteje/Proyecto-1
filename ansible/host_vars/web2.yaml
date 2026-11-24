@@ -1,0 +1,2 @@
+# IP de web2 en la red de datos (estática, ver opentofu/cloud-init)
+ip_datos: 10.10.10.11

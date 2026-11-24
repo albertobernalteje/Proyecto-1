@@ -22,15 +22,17 @@
     state: present
     login_unix_socket: /run/mysqld/mysqld.sock
 
-- name: Crear el usuario, que solo puede conectarse desde el servidor web
+# Un usuario por cada servidor web (MariaDB distingue usuario@host)
+- name: Crear el usuario, que solo puede conectarse desde los servidores web
   community.mysql.mysql_user:
     name: "{{ bd_usuario }}"
-    host: "{{ ip_datos_web }}"
+    host: "{{ hostvars[item].ip_datos }}"
     password: "{{ bd_password }}"
     priv: "{{ bd_nombre }}.*:ALL"
     column_case_sensitive: true
     state: present
     login_unix_socket: /run/mysqld/mysqld.sock
+  loop: "{{ groups['servidores_web'] }}"
 
 # Puede hacer la copia (SELECT, LOCK TABLES...) y restaurarla (DROP, CREATE, INSERT...),
 # pero solo de la base de datos de la aplicación y solo desde backup

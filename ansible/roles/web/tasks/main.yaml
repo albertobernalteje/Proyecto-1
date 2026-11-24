@@ -13,6 +13,21 @@
     state: present
   notify: Reiniciar apache2
 
+# mod_headers añade la cabecera X-Servidor: así se ve qué servidor contesta
+- name: Activar mod_headers
+  community.general.apache2_module:
+    name: headers
+    state: present
+  notify: Reiniciar apache2
+
+# El puerto 80 de web es del balanceador: Apache escucha en la red de datos
+- name: Apache escucha solo en la red de datos
+  ansible.builtin.lineinfile:
+    path: /etc/apache2/ports.conf
+    regexp: '^Listen '
+    line: "Listen {{ ip_datos }}:{{ apache_puerto }}"
+  notify: Reiniciar apache2
+
 # update: false para no tocar el repositorio en ejecuciones posteriores
 # (config.php se sobrescribe con la plantilla)
 - name: Desplegar la aplicación

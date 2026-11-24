@@ -1,6 +1,9 @@
-<VirtualHost *:80>
+<VirtualHost *:{{ apache_puerto }}>
     ServerName {{ vhost_nombre }}
     DocumentRoot {{ vhost_docroot }}
+
+    # Indica qué servidor web ha atendido la petición
+    Header always set X-Servidor "{{ inventory_hostname }}"
 
     <Directory {{ vhost_docroot }}>
         AllowOverride All

@@ -1,5 +1,5 @@
 # Direcciones de la red de datos (estáticas, ver opentofu/cloud-init)
-ip_datos_web: 10.10.10.10
+# (las de los servidores web están en host_vars: ip_datos)
 ip_datos_bd: 10.10.10.20
 ip_datos_backup: 10.10.10.30
 

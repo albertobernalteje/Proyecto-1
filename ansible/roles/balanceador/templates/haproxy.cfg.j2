@@ -1,0 +1,39 @@
+# Generado por Ansible (rol balanceador)
+global
+    log /dev/log local0
+    chroot /var/lib/haproxy
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    mode http
+    log global
+    option httplog
+    timeout connect 5s
+    timeout client 30s
+    timeout server 30s
+
+# Entrada: el puerto 80 de web, por el que llegan los clientes
+frontend guestbook
+    bind *:80
+    default_backend servidores_web
+
+# Reparto por turnos (roundrobin) entre los servidores web.
+# La aplicación guarda la sesión (token CSRF) en el servidor, así que HAProxy
+# añade la cookie SERVIDOR para que cada navegador vaya siempre al mismo.
+# check: si un servidor no responde, deja de enviarle peticiones.
+backend servidores_web
+    balance roundrobin
+    cookie SERVIDOR insert indirect nocache
+{% for servidor in groups['servidores_web'] %}
+    server {{ servidor }} {{ hostvars[servidor].ip_datos }}:{{ apache_puerto }} check cookie {{ servidor }}
+{% endfor %}
+
+# Página de estadísticas: estado de cada servidor y peticiones atendidas
+listen estadisticas
+    bind *:{{ haproxy_stats_puerto }}
+    stats enable
+    stats uri /
+    stats refresh 5s
+    stats auth {{ haproxy_stats_usuario }}:{{ haproxy_stats_password }}

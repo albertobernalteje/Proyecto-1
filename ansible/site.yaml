@@ -1,6 +1,6 @@
-# Primero web hace de router: bd necesita salir a internet a través de él
+# Primero web hace de router: web2, bd y backup salen a internet a través de él
 - name: Router/NAT
-  hosts: servidores_web
+  hosts: balanceador
   become: true
   gather_facts: false
   pre_tasks:
@@ -13,7 +13,7 @@
   roles:
     - router
 
-# bd puede tardar en arrancar: se espera a que acepte SSH antes de recoger facts
+# web2, bd y backup pueden tardar en arrancar: se espera a que acepte SSH antes de recoger facts
 - name: Configuración común
   hosts: all
   become: true
@@ -34,11 +34,18 @@
   roles:
     - bd
 
-- name: Servidor web
+- name: Servidores web
   hosts: servidores_web
   become: true
   roles:
     - web
+
+# Después de web: Apache ya ha dejado libre el puerto 80 para HAProxy
+- name: Balanceador de carga
+  hosts: balanceador
+  become: true
+  roles:
+    - balanceador
 
 # backup hace las copias de la base de datos por la red de datos
 - name: Copias de seguridad
