@@ -9,6 +9,7 @@ la aplicación [guestbook_php](https://github.com/josedom24/guestbook_php)
 | Máquina | Sistema      | Red NAT (`p1-red-nat`)  | Red de datos (`p1-red-datos`) |
 |---------|--------------|-------------------------|-------------------------------|
 | `web`   | Debian 13    | DHCP (192.168.140.0/24) | 10.10.10.10                   |
+| `web2`  | Debian 13    | —                       | 10.10.10.11 (gw 10.10.10.10)  |
 | `bd`    | Ubuntu 26.04 | —                       | 10.10.10.20 (gw 10.10.10.10)  |
 | `backup`| Debian 13    | —                       | 10.10.10.30 (gw 10.10.10.10)  |
 
@@ -21,12 +22,17 @@ la aplicación [guestbook_php](https://github.com/josedom24/guestbook_php)
   a `bd` saltando por `web` (SSH con `ProxyCommand`).
 - `backup` también está solo en la red de datos y sale a internet por `web`.
   Hace cada día una copia de la base de datos de `bd` por la red de datos.
+- Balanceo de carga: `web` tiene HAProxy en el puerto 80, que reparte las
+  peticiones por turnos entre los dos servidores web (`web` y `web2`, con
+  Apache en el puerto 8080 de la red de datos). Una cookie mantiene a cada
+  navegador en el mismo servidor (la aplicación guarda la sesión en él) y, si
+  un servidor se cae, HAProxy deja de enviarle peticiones.
 
 ## Estructura
 
 - `opentofu/`: definición del escenario (redes, máquinas, cloud-init) y
   generación del inventario de Ansible (`ansible/hosts`).
-- `ansible/`: configuración con cinco roles:
+- `ansible/`: configuración con seis roles:
   - `router`: en `web`, activa el reenvío de paquetes y el NAT de la red de
     datos con iptables (reglas guardadas con iptables-persistent). Se ejecuta
     primero porque `bd` lo necesita para salir a internet.
@@ -34,11 +40,16 @@ la aplicación [guestbook_php](https://github.com/josedom24/guestbook_php)
   - `bd`: MariaDB escuchando solo en la red de datos, base de datos, usuario
     que solo puede conectarse desde `web`, usuario de copias que solo puede
     conectarse desde `backup` y tablas de la aplicación.
-  - `web`: Apache con PHP, virtual host `www.albertobernal.org` y la aplicación.
+  - `web`: en `web` y `web2`, Apache con PHP escuchando en la red de datos
+    (puerto 8080), virtual host `www.albertobernal.org` con la cabecera
+    `X-Servidor` (dice qué servidor contesta) y la aplicación.
+  - `balanceador`: en `web`, HAProxy en el puerto 80 con los dos servidores
+    web en el backend y la página de estadísticas en el puerto 8404.
   - `backup`: en `backup`, script `copia-bd` (`mariadb-dump` comprimido con
     gzip, guardando solo las últimas copias) que lanza cada día un timer de
     systemd, y script `restaurar-bd` para recuperar una copia.
-- Las variables están en `ansible/group_vars/`.
+- Las variables están en `ansible/group_vars/` y la IP de cada servidor web
+  en la red de datos en `ansible/host_vars/`.
 
 ## Requisitos
 
@@ -66,6 +77,16 @@ anfitrión la IP NAT de `web` (sale en `tofu output`):
 ```
 192.168.140.X  www.albertobernal.org
 ```
+
+Balanceo de carga:
+
+```bash
+# Sin cookie, cada petición va a un servidor distinto
+for i in 1 2 3 4; do curl -sI http://www.albertobernal.org | grep -i x-servidor; done
+```
+
+Estadísticas de HAProxy: `http://www.albertobernal.org:8404` (usuario `admin`,
+contraseña en `ansible/group_vars/balanceador.yaml`).
 
 Copias de seguridad (en `backup`, entrando con `ssh -J debian@<IP_WEB> debian@10.10.10.30`):
 
