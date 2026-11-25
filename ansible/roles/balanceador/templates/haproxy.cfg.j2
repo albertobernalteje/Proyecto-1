@@ -10,6 +10,10 @@ defaults
     mode http
     log global
     option httplog
+    # Si falla la conexión con un servidor, el último reintento va al otro:
+    # así no se pierde ninguna petición mientras el check lo marca como caído
+    option redispatch
+    retries 2
     timeout connect 5s
     timeout client 30s
     timeout server 30s
